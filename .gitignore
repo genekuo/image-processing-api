@@ -11,6 +11,7 @@ image-processing-api
 
 # Output
 *.out
+*.png
 coverage.out
 coverage.html
 
