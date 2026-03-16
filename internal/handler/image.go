@@ -95,7 +95,7 @@ func (h *ImageHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		imageCacheHits.Inc()
 		w.Header().Set("Content-Type", "image/png")
 		w.WriteHeader(http.StatusOK)
-		w.Write(data)
+		_, _ = w.Write(data)
 		return
 	}
 	imageCacheMisses.Inc()
@@ -136,7 +136,7 @@ func (h *ImageHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "image/png")
 	w.WriteHeader(http.StatusOK)
-	w.Write(data)
+	_, _ = w.Write(data)
 }
 
 // writeError generates and writes a placeholder image response with the given
@@ -151,7 +151,7 @@ func (h *ImageHandler) writeError(w http.ResponseWriter, statusCode int, msg str
 	}
 	w.Header().Set("Content-Type", "image/png")
 	w.WriteHeader(statusCode)
-	w.Write(data)
+	_, _ = w.Write(data)
 }
 
 // cacheKey computes a SHA-256 hex digest of the URL and operations string.

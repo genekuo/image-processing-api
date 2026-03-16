@@ -49,7 +49,7 @@ func TestDownload_JPEG(t *testing.T) {
 	data := encodeJPEG(t, newTestImage(100, 50))
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "image/jpeg")
-		w.Write(data)
+		_, _ = w.Write(data)
 	}))
 	defer srv.Close()
 
@@ -69,7 +69,7 @@ func TestDownload_PNG(t *testing.T) {
 	data := encodePNG(t, newTestImage(80, 60))
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "image/png")
-		w.Write(data)
+		_, _ = w.Write(data)
 	}))
 	defer srv.Close()
 
@@ -90,7 +90,7 @@ func TestDownload_MaxSizeExceeded(t *testing.T) {
 	data := encodePNG(t, newTestImage(200, 200))
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "image/png")
-		w.Write(data)
+		_, _ = w.Write(data)
 	}))
 	defer srv.Close()
 
