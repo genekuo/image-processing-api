@@ -48,7 +48,7 @@ curl "http://localhost:8080/image?url=https://picsum.photos/800/600&op=rotate-90
 curl "http://localhost:8080/image?url=https://picsum.photos/800/600&op=resize-400x300" -o resized.png
 
 # Chain operations: rotate then resize
-curl "http://localhost:8080/image?url=https://example.com/photo.jpg&op=rotate-180,resize-1200x800" -o result.png
+curl "http://localhost:8080/image?url=https://picsum.photos/800/600&op=rotate-180,resize-1200x800" -o result.png
 ```
 
 **Response:**
