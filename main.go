@@ -2,10 +2,15 @@
 package main
 
 import (
+	"context"
 	"log/slog"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/genekuo/image-processing-api/internal/config"
+	"github.com/genekuo/image-processing-api/internal/server"
 )
 
 func main() {
@@ -15,5 +20,29 @@ func main() {
 		os.Exit(1)
 	}
 
-	slog.Info("server starting", "port", cfg.Port)
+	srv := server.New(cfg)
+
+	// Start server in background goroutine.
+	go func() {
+		if err := srv.Start(); err != nil {
+			slog.Error("server failed", "error", err)
+			os.Exit(1)
+		}
+	}()
+
+	slog.Info("server started", "port", cfg.Port)
+
+	// Wait for interrupt signal.
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+	<-sigCh
+
+	// Graceful shutdown with 10s timeout.
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	if err := srv.Shutdown(ctx); err != nil {
+		slog.Error("shutdown error", "error", err)
+		os.Exit(1)
+	}
 }
