@@ -1,7 +1,10 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -122,4 +125,69 @@ func TestCORSPreflight(t *testing.T) {
 	if origin != "*" {
 		t.Fatalf("expected Access-Control-Allow-Origin *, got %q", origin)
 	}
+}
+
+func TestStartAndShutdown(t *testing.T) {
+	cfg := &config.Config{
+		Port:            0, // OS assigns a free port
+		MaxSourceSize:   50 * 1024 * 1024,
+		MaxOutputWidth:  1400,
+		MaxOutputHeight: 1400,
+		CacheTTL:        5 * time.Minute,
+	}
+
+	srv := New(cfg)
+
+	// Pick a free port by opening a listener, reading its port, and closing it.
+	ln, err := net.Listen("tcp", ":0")
+	if err != nil {
+		t.Fatalf("finding free port: %v", err)
+	}
+	port := ln.Addr().(*net.TCPAddr).Port
+	ln.Close()
+
+	srv.httpServer.Addr = fmt.Sprintf(":%d", port)
+
+	errCh := make(chan error, 1)
+	go func() {
+		errCh <- srv.Start()
+	}()
+
+	// Give the server a moment to start listening.
+	time.Sleep(100 * time.Millisecond)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := srv.Shutdown(ctx); err != nil {
+		t.Fatalf("shutdown error: %v", err)
+	}
+
+	// Start should return nil because ListenAndServe returns ErrServerClosed.
+	if err := <-errCh; err != nil {
+		t.Fatalf("expected nil from Start after graceful shutdown, got: %v", err)
+	}
+}
+
+func TestStartInvalidPort(t *testing.T) {
+	cfg := &config.Config{
+		Port:            0,
+		MaxSourceSize:   50 * 1024 * 1024,
+		MaxOutputWidth:  1400,
+		MaxOutputHeight: 1400,
+		CacheTTL:        5 * time.Minute,
+	}
+
+	srv := New(cfg)
+	// Set an invalid address so ListenAndServe fails immediately.
+	srv.httpServer.Addr = ":-1"
+
+	err := srv.Start()
+	if err == nil {
+		t.Fatal("expected error from Start with invalid port, got nil")
+	}
+
+	t.Cleanup(func() {
+		srv.cache.Stop()
+	})
 }
