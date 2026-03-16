@@ -38,7 +38,7 @@ func newTestHandler(t *testing.T, pngData []byte) (*ImageHandler, string) {
 
 	imgSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "image/png")
-		w.Write(pngData)
+		_, _ = w.Write(pngData)
 	}))
 	t.Cleanup(imgSrv.Close)
 
