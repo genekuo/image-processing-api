@@ -54,7 +54,7 @@ func (d *Downloader) Download(ctx context.Context, rawURL string) (image.Image, 
 	if err != nil {
 		return nil, fmt.Errorf("downloading image: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("unexpected HTTP status %d for %s", resp.StatusCode, rawURL)
