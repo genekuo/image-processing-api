@@ -1,0 +1,11 @@
+services:
+  api:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - MAX_SOURCE_SIZE=52428800
+      - MAX_OUTPUT_WIDTH=1400
+      - MAX_OUTPUT_HEIGHT=1400
+      - CACHE_TTL=5m
