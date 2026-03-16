@@ -226,3 +226,28 @@ func TestApply_UnknownType(t *testing.T) {
 		t.Fatal("expected error for unknown operation type, got nil")
 	}
 }
+
+func TestRotate270_Dimensions(t *testing.T) {
+	src := makeImage(100, 50, color.RGBA{B: 255, A: 255})
+	op := Operation{Type: "rotate", Angle: 270}
+
+	result, err := Apply(src, op)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	b := result.Bounds()
+	if b.Dx() != 50 || b.Dy() != 100 {
+		t.Errorf("expected 50x100, got %dx%d", b.Dx(), b.Dy())
+	}
+}
+
+func TestApplyRotate_UnsupportedAngle(t *testing.T) {
+	src := makeImage(10, 10, color.RGBA{A: 255})
+	op := Operation{Type: "rotate", Angle: 45}
+
+	_, err := Apply(src, op)
+	if err == nil {
+		t.Fatal("expected error for unsupported rotation angle")
+	}
+}

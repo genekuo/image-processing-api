@@ -218,3 +218,87 @@ func TestServeHTTP_ContentTypeOnError(t *testing.T) {
 		})
 	}
 }
+
+func TestServeHTTP_DownloadFailure(t *testing.T) {
+	// Server that returns an error
+	failSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	t.Cleanup(failSrv.Close)
+
+	cfg := &config.Config{
+		Port:            0,
+		MaxSourceSize:   50 * 1024 * 1024,
+		MaxOutputWidth:  1400,
+		MaxOutputHeight: 1400,
+		CacheTTL:        5 * time.Minute,
+	}
+	c := cache.New(cfg.CacheTTL)
+	t.Cleanup(c.Stop)
+	dl := service.NewDownloader(cfg.MaxSourceSize)
+	h := NewImageHandler(dl, c, cfg)
+
+	req := httptest.NewRequest(http.MethodGet, "/image?url="+failSrv.URL+"/bad.png&op=resize-100x100", nil)
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusBadGateway {
+		t.Fatalf("expected status 502, got %d", rec.Code)
+	}
+}
+
+func TestExtractDimensions(t *testing.T) {
+	tests := []struct {
+		name       string
+		ops        []service.Operation
+		wantWidth  int
+		wantHeight int
+	}{
+		{
+			name:       "no resize",
+			ops:        []service.Operation{{Type: "rotate", Angle: 90}},
+			wantWidth:  0,
+			wantHeight: 0,
+		},
+		{
+			name:       "with resize",
+			ops:        []service.Operation{{Type: "rotate", Angle: 90}, {Type: "resize", Width: 200, Height: 100}},
+			wantWidth:  200,
+			wantHeight: 100,
+		},
+		{
+			name:       "multiple resize uses last",
+			ops:        []service.Operation{{Type: "resize", Width: 100, Height: 50}, {Type: "resize", Width: 300, Height: 200}},
+			wantWidth:  300,
+			wantHeight: 200,
+		},
+		{
+			name:       "empty ops",
+			ops:        nil,
+			wantWidth:  0,
+			wantHeight: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			w, h := extractDimensions(tt.ops)
+			if w != tt.wantWidth || h != tt.wantHeight {
+				t.Errorf("extractDimensions() = (%d, %d), want (%d, %d)", w, h, tt.wantWidth, tt.wantHeight)
+			}
+		})
+	}
+}
+
+func TestCacheKey(t *testing.T) {
+	k1 := cacheKey("http://example.com/img.png", "rotate-90")
+	k2 := cacheKey("http://example.com/img.png", "rotate-90")
+	k3 := cacheKey("http://example.com/img.png", "rotate-180")
+
+	if k1 != k2 {
+		t.Error("same inputs should produce same key")
+	}
+	if k1 == k3 {
+		t.Error("different inputs should produce different keys")
+	}
+}
