@@ -144,7 +144,7 @@ func TestStartAndShutdown(t *testing.T) {
 		t.Fatalf("finding free port: %v", err)
 	}
 	port := ln.Addr().(*net.TCPAddr).Port
-	_ = ln.Close()
+	ln.Close()
 
 	srv.httpServer.Addr = fmt.Sprintf(":%d", port)
 
