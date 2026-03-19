@@ -1,0 +1,29 @@
+server:
+  port: 8080
+
+app:
+  max-source-size: 52428800   # 50 MB
+  max-output-width: 1400
+  max-output-height: 1400
+  cache-ttl: PT5M             # 5 minutes
+
+management:
+  endpoints:
+    web:
+      base-path: /
+      path-mapping:
+        prometheus: metrics
+      exposure:
+        include: prometheus
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+  # Disable actuator /health to avoid conflict with our custom /health endpoint
+  endpoint:
+    health:
+      enabled: false
+
+spring:
+  application:
+    name: spring-image-processing
